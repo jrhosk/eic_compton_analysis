@@ -48,7 +48,7 @@ ComptonSimAnalysis::ComptonSimAnalysis()
 
   compton.halo_amplitude = 7.2e-5;
   compton.halo_scale_x = 3.3;
-  compton.halo_scale_x = 10;
+  compton.halo_scale_y = 10;
   compton.gaussian_weight = 0.997275;     // This is for 0-3 sigma but should really be set each case.
 
   fFileOutput = "analysis.C";
@@ -178,7 +178,6 @@ double ComptonSimAnalysis::CalculateHaloFraction()
 {
 
   compton.halo_ratio = compton.halo_scale_x*compton.halo_scale_y*compton.halo_amplitude;
-
   return (compton.halo_ratio);
 }
 
