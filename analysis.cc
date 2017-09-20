@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
   simulation->CalculateIntegratedCS();
   std::cout << "Integrated cross section: " << simulation->compton.cross_section << std::endl;
   simulation->CalculateLuminosity(1);
+  simulation->CalculateGaussianWeight();
 
   std::vector <int> *id    = 0;
   std::vector <int> *pid   = 0;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[])
   int entries = fChain->GetEntries();
   
   if(entries == 0){
-    std::cout << "No events found. Exiting." << std::endl;
+    simulation->PrintError((const char*)"No events found. Exiting.");
     exit(1);
   }
   
@@ -105,10 +106,10 @@ int main(int argc, char *argv[])
   }
   double w = 1;
   if(simulation->fBackgroundWeight) w = (pchep::coulomb*simulation->pressure_conversion)/entries; 
-  if(simulation->fComptonWeight)    w = (simulation->compton.luminosity*simulation->compton.cross_section)/entries;                    // units Hz corrected for cross_section/luminosity weighted
+  if(simulation->fComptonWeight)    w = (simulation->compton.luminosity*simulation->compton.cross_section)/entries; // units Hz corrected for cross_section/luminosity weighted
   if(simulation->fHaloWeight){
     simulation->CalculateHaloFraction();
-    w = (simulation->compton.halo_ratio*pchep::coulomb*simulation->compton.gaussian_weight)/entries;  // units Hz corrected for luminosity weighted for halo
+    w = (simulation->compton.halo_ratio*pchep::coulomb*simulation->compton.gaussian_weight)/entries; // units Hz corrected for luminosity weighted for halo
   }
 
   TH1D *hist = new TH1D("hist", "hist", 200, 0, 200);

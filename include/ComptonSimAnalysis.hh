@@ -29,6 +29,7 @@ public:
     double halo_scale_x;
     double halo_scale_y;
     double gaussian_weight;
+    double aperture_size;
   };
 
   struct parameters { 
@@ -55,6 +56,7 @@ public:
   bool fComptonWeight;
   bool fBackgroundWeight;
   bool fHaloWeight;
+  bool fApertureSize;
 
   // Functions
 
@@ -68,10 +70,11 @@ public:
   void ParseDetectorFile(std::fstream &file);
   void InitGraphicsEngine(int, char** );
   void RunGraphicsEngine();
+  void PrintError(const char *);
 
   double CalculateIntegratedCS();
   double CalculateLuminosity(double);
-  double CalculateGuassianWeight();
+  double CalculateGaussianWeight();
   double CalculateHaloFraction();
 
   bool OpenFile(TChain *);

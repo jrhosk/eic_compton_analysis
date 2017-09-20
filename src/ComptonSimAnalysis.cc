@@ -22,6 +22,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/math/constants/constants.hpp"
+#include <boost/math/special_functions/erf.hpp>
 
 // Custom Libraries
 
@@ -38,18 +39,20 @@ ComptonSimAnalysis::ComptonSimAnalysis()
   fComptonWeight    = false;
   fBackgroundWeight = false;
   fHaloWeight       = false;
+  fApertureSize     = false;
 
   beam.beam_energy = 5;            // GeV
   beam.laser_energy = 2.33e-9;     // GeV
   beam.polarization = -1;
-  beam.sigma_ex = 226.6e-6;
-  beam.sigma_ey = 99e-6; 
+  beam.sigma_ex = 226.6e-6;        // meters
+  beam.sigma_ey = 99e-6;           // meters 
   beam.sigma_g = 151.4e-6; 
 
   compton.halo_amplitude = 7.2e-5;
   compton.halo_scale_x = 3.3;
   compton.halo_scale_y = 10;
-  compton.gaussian_weight = 0.997275;     // This is for 0-3 sigma but should really be set each case.
+  compton.gaussian_weight = 4.40643e-07;     // Should really be set each case.
+  compton.aperture_size = 0.5;
 
   fFileOutput = "analysis.C";
 
@@ -76,7 +79,7 @@ void ComptonSimAnalysis::GetOptions(char **options){
      fFileLocation = opt;
      flag.clear();
      fFileSet = true;
-     std::cout << blue << "Loading root file:\t" 
+     std::cout << red << "Loading root file:\t" 
     	       << fFileLocation 
     	       << white << std::endl;
    }
@@ -105,22 +108,36 @@ void ComptonSimAnalysis::GetOptions(char **options){
       flag.clear();
       fPolarization = atof(options[i+1]);
     }
+    if(flag.compare("--aperture-size") == 0){
+      flag.clear();
+      fApertureSize = true;
+      compton.aperture_size = atof(options[i+1]);
+    }
     if(flag.compare("--energy") == 0){
       flag.clear();
       beam.beam_energy = atof(options[i+1]);
+      if(beam.beam_energy == 5) {
+	beam.sigma_ex = 226.6e-6;
+	beam.sigma_ey = 99e-6; 
+      }
+      if(beam.beam_energy == 11) {
+	beam.sigma_ex = 356e-6;
+	beam.sigma_ey = 115e-6;
+      }
     }
 
    if(flag.compare("--help") == 0){
      printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-     printf("Usage: ./comptonfit <options>\n");
+     printf("Usage: ./analysis <options>\n");
      printf("         --graphics       \tGraphical output.\n");
      printf("         --file           \tDefines input root file.\n");
      printf("         --output-file    \tDefines output root file.\n");
-     printf("         --compton-weight \tGraphical output.\n");
-     printf("         --halo-weight    \tGraphical output.\n");
-     printf("         --background-weight \tGraphical output.\n");
-     printf("         --polarization   \tBeam polarization.\n");
-     printf("         --energy         \tBeam energy.\n");
+     printf("         --compton-weight               \tWeighting flag.\n");
+     printf("         --halo-weight                  \tWeighting flag.\n");
+     printf("         --background-weight            \tWeighting flag.\n");
+     printf("         --polarization  <polarization> \tBeam polarization.\n");
+     printf("         --energy        <energy GeV>   \tBeam energy.\n");
+     printf("         --aperture-size <size cm>      \tBeam energy.\n");
      printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
      exit(0);
    }
@@ -140,37 +157,26 @@ double ComptonSimAnalysis::CalculateLuminosity(double current)
   
   compton.luminosity = (1e-4)*(coeff*top)/bottom;  // convert to cm^-2
 
-  std::cout << "Luminosity: " << compton.luminosity << std::endl;
+  std::cout << blue << "Luminosity: " << compton.luminosity << white << std::endl;
 
   return(compton.luminosity);
 }
 
 bool ComptonSimAnalysis::OpenFile(TChain *fChain)
 {
-
-  // c_status = fChain->Add(fFileLocation);
-  // std::cout << "Trying to open :: "
-  //           << fFileLocation
-  //           << std::endl;
-
-
-  // TString chain_name = fChain->GetName();
-  // TObjArray *fileElements = fChain->GetListOfFiles();
-  // TIter next(fileElements);
-  // TChainElement *chain_element = NULL;
-
-  // while((chain_element = (TChainElement*)next())){
-  //   std::cout << "Adding :: "
-  //             << filename
-  //             << " to data chain"
-  //             << std::endl;
-  // }
-  // return c_status;
   return true;
 }
 
-double ComptonSimAnalysis::CalculateGuassianWeight()
+double ComptonSimAnalysis::CalculateGaussianWeight()
 {
+  if(!fApertureSize){
+    PrintError("Aperture size not defined. Using default aperture size (+- 0.5 cm). Please refer to --help for instruction on setting this value.");
+    return 0;
+  }
+  // the factor of ten is a multplier for the halo and the 'e2' is to convert to cm
+  compton.gaussian_weight = boost::math::erfc(compton.aperture_size/(std::sqrt(2)*10e2*beam.sigma_ey));
+  std::cout << blue << "\n>>>>> Gaussian weight: " << compton.gaussian_weight << white << std::endl;
+
   return 0;
 }
 
@@ -206,6 +212,12 @@ double ComptonSimAnalysis::CalculateIntegratedCS()
 
   return(2*TMath::Pi()*this->GetFunction((char *)"cs")->Integral(0,1));
 
+}
+
+void ComptonSimAnalysis::PrintError(const char *message)
+{
+  std::cout << red << message << "\n" << white << std::endl;
+  return;
 }
 
 #endif
