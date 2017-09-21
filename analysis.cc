@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
   std::vector <int> *hitn  = 0;
   std::vector <int> *totEdep  = 0;
   
-  std::vector <int> BinContent(200);
+  std::vector <int> BinContent(simulation->beam.strip_number);
   std::fill(BinContent.begin(), BinContent.end(), 0);  
 
   if(!(simulation->fFileSet)){
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
   for(Int_t i = 0; i < entries; i++){
     fChain->GetEntry(i);
     for(Int_t j = 0; j < (Int_t)id->size(); j++){
-      if(id->at(j) < 201){
+      if(id->at(j) < (simulation->beam.strip_number)+1){
 	ID = id->at(j);
 	BinContent[ID]++;
       }
@@ -112,9 +112,9 @@ int main(int argc, char *argv[])
     w = (simulation->compton.halo_ratio*pchep::coulomb*simulation->compton.gaussian_weight)/entries; // units Hz corrected for luminosity weighted for halo
   }
 
-  TH1D *hist = new TH1D("hist", "hist", 200, 0, 200);
+  TH1D *hist = new TH1D("hist", "hist", simulation->beam.strip_number, 1, simulation->beam.strip_number);
 
-  for(Int_t i = 0; i < 201; i++){
+  for(Int_t i = 1; i < (simulation->beam.strip_number)+1; i++){
     int entry_count = BinContent[i]; 
     std::cout << "Strip: " << i << " entry# " << entry_count << std::endl;
     for(Int_t j = 0; j < entry_count; j++){

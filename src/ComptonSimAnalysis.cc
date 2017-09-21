@@ -41,12 +41,13 @@ ComptonSimAnalysis::ComptonSimAnalysis()
   fHaloWeight       = false;
   fApertureSize     = false;
 
-  beam.beam_energy = 5;            // GeV
-  beam.laser_energy = 2.33e-9;     // GeV
+  beam.beam_energy  = 5;         // GeV
+  beam.laser_energy = 2.33e-9;   // GeV
   beam.polarization = -1;
-  beam.sigma_ex = 226.6e-6;        // meters
-  beam.sigma_ey = 99e-6;           // meters 
-  beam.sigma_g = 151.4e-6; 
+  beam.sigma_ex     = 226.6e-6;  // meters
+  beam.sigma_ey     = 99e-6;     // meters 
+  beam.sigma_g      = 151.4e-6; 
+  beam.strip_number = 200;
 
   compton.halo_amplitude = 7.2e-5;
   compton.halo_scale_x = 3.3;
@@ -113,6 +114,10 @@ void ComptonSimAnalysis::GetOptions(char **options){
       fApertureSize = true;
       compton.aperture_size = atof(options[i+1]);
     }
+    if(flag.compare("--number-strips") == 0){
+      flag.clear();
+      beam.strip_number = atof(options[i+1]);
+    }
     if(flag.compare("--energy") == 0){
       flag.clear();
       beam.beam_energy = atof(options[i+1]);
@@ -137,7 +142,8 @@ void ComptonSimAnalysis::GetOptions(char **options){
      printf("         --background-weight            \tWeighting flag.\n");
      printf("         --polarization  <polarization> \tBeam polarization.\n");
      printf("         --energy        <energy GeV>   \tBeam energy.\n");
-     printf("         --aperture-size <size cm>      \tBeam energy.\n");
+     printf("         --aperture-size <size cm>      \tAperture size.\n");
+     printf("         --number-strips <# strips>     \tNumber of detector strips.\n");
      printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
      exit(0);
    }

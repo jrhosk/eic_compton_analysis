@@ -40,6 +40,7 @@ public:
     double sigma_ex;
     double sigma_ey;
     double sigma_g;
+    double strip_number;
   };
 
 
