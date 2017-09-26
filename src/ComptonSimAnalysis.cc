@@ -121,6 +121,10 @@ void ComptonSimAnalysis::GetOptions(char **options){
     if(flag.compare("--energy") == 0){
       flag.clear();
       beam.beam_energy = atof(options[i+1]);
+      if(beam.beam_energy == 3) {
+	beam.sigma_ex = 136e-6;
+	beam.sigma_ey = 56e-6; 
+      }
       if(beam.beam_energy == 5) {
 	beam.sigma_ex = 226.6e-6;
 	beam.sigma_ey = 99e-6; 
