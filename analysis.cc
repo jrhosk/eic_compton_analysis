@@ -27,8 +27,9 @@
 #include "Generator.hh"
 
 // Addition QoL libraries
-#include "FontColor.hh"
 #include "PhysicalConstants.hh"
+#include "MsgStream.hh"
+#include "SysMsg.hh"
 
 int main(int argc, char *argv[])
 {
@@ -36,6 +37,8 @@ int main(int argc, char *argv[])
   ComptonSimAnalysis *simulation = new ComptonSimAnalysis();
 
   simulation->GetOptions(argv);
+
+  if(simulation->fAsymmetryAnalysis) simulation->AsymmetryAnalysis();
   if(simulation->fGraphicsShow) simulation->InitGraphicsEngine(argc, argv);
 
   simulation->GenerateAsymmetry((char *)""); // The char * casting removes a deprecatred warning caused by difference between char * in C and C++

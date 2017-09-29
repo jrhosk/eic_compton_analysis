@@ -3,7 +3,9 @@
 #include "TF2.h"
 #include "TF1.h"
 #include "TMath.h"
-#include "../include/FontColor.hh"
+#include "MsgStream.hh"
+#include "SysMsg.hh"
+
 
 #ifdef Generator_cxx
 
@@ -125,12 +127,10 @@ double Generator::GetPhotonPz(){return kinematics.kz;}
 
 void Generator::CalculateKinematics()
 {
-  // double rho  = 0;
   double electron_prime = 0;
 
   kinematics.rho = cs->GetRandom();
 
-  // kinematics.rho = rho;
   kinematics.photon_phi = gRandom->Uniform(0, 2*TMath::Pi()); // Sample from a uniform distribution of phi
 
   kinematics.kmax = 4*alpha*laser_energy*std::pow(beam_energy/electron_mass_c2, 2); // The maximum scattered photon energy or minimum electron energy
@@ -140,11 +140,10 @@ void Generator::CalculateKinematics()
 
   electron_prime = beam_energy + laser_energy - kinematics.photon_momentum;
 
-  // kinematics.electron_momentum = std::sqrt(std::pow(beam_energy, 2) - std::pow(electron_mass_c2, 2)); 
   kinematics.electron_momentum = std::sqrt(std::pow(electron_prime, 2) - std::pow(electron_mass_c2, 2)); 
 
   kinematics.photon_theta = std::sqrt(4*laser_energy*alpha/kinematics.photon_momentum-std::pow(electron_mass_c2/beam_energy, 2));
-  // kinematics.photon_theta = std::sqrt( 4.*kinematics.photon_momentum/kinematics.kmax - 1./(alpha*std::pow(beam_energy/electron_mass_c2, 2)));
+
   kinematics.electron_theta = std::asin(kinematics.photon_momentum*std::sin(kinematics.photon_theta)/kinematics.electron_momentum); // check this
 
   kinematics.px = kinematics.electron_momentum*std::sin(kinematics.electron_theta)*std::sin(kinematics.electron_phi);
@@ -156,7 +155,6 @@ void Generator::CalculateKinematics()
   kinematics.kz = kinematics.photon_momentum*std::cos(kinematics.photon_theta);
 
   kinematics.asymmetry = RhoToAsymmetry(beam_energy, laser_energy, kinematics.rho);
-  // PrintAsymmetryInfo();
 }
 
 void Generator::PrintAsymmetryInfo()
@@ -198,9 +196,6 @@ double Generator::CalculateAsymmetry(double *x = 0, double *par = 0)
 double Generator::RhoToAsymmetry(double b_energy = 0, double l_energy = 0, double rho = 0)
 {
 
-  // double b_energy   = par[0];
-  // double l_energy   = par[1];
-
   alpha = 1/(1 + (4*l_energy*b_energy)/(electron_mass_c2*electron_mass_c2));  
 
   double minus = rho*(1-alpha);
@@ -220,7 +215,7 @@ void Generator::OpenOutputFile()
   output.open(fFileName, std::fstream::out);
 
   if(!(output.is_open())){
-    std::cerr << red << "Failure to open output file. Exiting." << white << std::endl;
+    Sys::SysError << "Failure to open output file. Exiting." << Sys::endl;
     exit(1);
   }
 
@@ -232,7 +227,7 @@ void Generator::OpenOutputFile(char *filename)
   output.open(filename, std::fstream::out);
 
   if(!(output.is_open())){
-    std::cerr << red << "Failure to open output file. Exiting." << white << std::endl;
+    Sys::SysError << "Failure to open output file. Exiting." << Sys::endl;
     exit(1);
   }
 
@@ -247,7 +242,6 @@ void Generator::WriteHeader()
          << laser_energy << " "
          << kinematics.kmax << " "
 	 << polarization << " "
-         // << "0. 0. 0. 0. 0. \n";
 	 << kinematics.rho << " "
 	 << kinematics.asymmetry << " "
 	 << "0. 0. 0. \n";
@@ -261,13 +255,10 @@ void Generator::WriteEvent(int index, int pid, double px, double py, double pz, 
          << " 0. 1 "
          << pid << " "
 	 << " 0 0 "
-	 // << kinematics.rho << " "
-	 // << kinematics.asymmetry << " "
          << px << " "
          << py << " "
          << pz << " "
          << momentum << " "
-    // << alpha << "-29.29464 0.0 -2287.855\n";                                                                                                                                 
 	 << alpha << " "
          << kinematics.vx << " "
          << kinematics.vy << " "
@@ -284,14 +275,7 @@ void Generator::ProcessEvent()
   WriteEvent(1, pid_photon, -kinematics.kx, -kinematics.ky, -kinematics.kz, kinematics.photon_momentum);
   WriteEvent(2, pid_electron, -kinematics.px, -kinematics.py, -kinematics.pz, kinematics.electron_momentum);
 
-  //  PrintEvent();
-
 }
-
-// void InitGeneratedAsymmetryGraph(int nevents)
-// {
-
-// }
 
 void Generator::BuildGeneratedAsymmetryPlot()
 {
@@ -375,43 +359,43 @@ void Generator::GetOptions(char **options)
       flag.Clear();
       fGraphicsShow = true;
 
-      std::cout << green << "<<<< Initializing TApplication for plots.\t" << white << std::endl;
+      Sys::SysMsg << "<<<< Initializing TApplication for plots.\t" << Sys::endl;
     }
     if(flag.CompareTo("--filename", TString::kExact) == 0){
       std::string option(options[i+1]);
       flag.Clear();
       fFileName = options[i + 1];
-      std::cout << green << "<<<< Output file set to: " << fFileName << white << std::endl;
+      Sys::SysMsg << "<<<< Output file set to: " << fFileName << Sys::endl;
     }
     if(flag.CompareTo("--polarization", TString::kExact) == 0){
       std::string option(options[i+1]);
       flag.Clear();
       fPolarization = atof(options[i + 1]);
-      std::cout << green << "<<<< Polarization set to: " << fPolarization << white << std::endl;
+      Sys::SysMsg << "<<<< Polarization set to: " << fPolarization << Sys::endl;
     }
     if(flag.CompareTo("--energy", TString::kExact) == 0){
       std::string option(options[i+1]);
       flag.Clear();
       beam_energy = atof(options[i + 1]);
-      std::cout << green << "<<<< Beam energy set to: " << beam_energy << white << std::endl;
+      Sys::SysMsg << "<<<< Beam energy set to: " << beam_energy << Sys::endl;
     }
     if(flag.CompareTo("--sigmax", TString::kExact) == 0){
       std::string option(options[i+1]);
       flag.Clear();
       sigma_x = atof(options[i + 1]);
-      std::cout << green << "<<<< Beam X-dispersion set to: " << sigma_x << white << std::endl;
+     Sys::SysMsg << "<<<< Beam X-dispersion set to: " << sigma_x << Sys::endl;
     }
     if(flag.CompareTo("--sigmay", TString::kExact) == 0){
       std::string option(options[i+1]);
       flag.Clear();
       sigma_y = atof(options[i + 1]);
-      std::cout << green << "<<<< Beam Y-dispersion set to: " << sigma_y << white << std::endl;
+      Sys::SysMsg << "<<<< Beam Y-dispersion set to: " << sigma_y << Sys::endl;
     }
     if(flag.CompareTo("--events", TString::kExact) == 0){
       std::string option(options[i+1]);
       flag.Clear();
       fNumberEvents = atoi(options[i + 1]);
-      std::cout << green << "<<<< Number of events generated: " << fNumberEvents << white << std::endl;
+      Sys::SysMsg << "<<<< Number of events generated: " << fNumberEvents << Sys::endl;
     }
     i++;
   }
@@ -420,14 +404,14 @@ void Generator::GetOptions(char **options)
 
 void Generator::InitGraphicsEngine(int Argc, char **Argv)
 {
-  std::cout << green << "<<<< Initialize Graphics Engine." << white << std::endl;
+  Sys::SysMsg << "<<<< Initialize Graphics Engine." << Sys::endl;
   app = new TApplication("App", &Argc, Argv);
 
 }
 
 void Generator::RunGraphicsEngine()
 {
-  std::cout << green << "<<<< Running Graphics Engine." << white << std::endl;
+  Sys::SysMsg << "<<<< Running Graphics Engine." << Sys::endl;
   app->Run();
 }
 

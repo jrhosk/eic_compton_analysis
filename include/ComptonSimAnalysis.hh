@@ -9,7 +9,7 @@
 
 #include "boost/filesystem.hpp"
 
-class ComptonSimAnalysis: public Generator {
+class ComptonSimAnalysis: public Generator, public std::ostream {
 
 private:
 
@@ -50,14 +50,19 @@ public:
   TApplication *app;
 
   std::string fFileLocation;
+  std::string fFileRight;
+  std::string fFileLeft;
   std::string fFileOutput;
 
   bool fGraphicsShow;
   bool fFileSet;
+  bool fFileLeftSet;
+  bool fFileRightSet;
   bool fComptonWeight;
   bool fBackgroundWeight;
   bool fHaloWeight;
   bool fApertureSize;
+  bool fAsymmetryAnalysis;
 
   // Functions
 
@@ -72,8 +77,10 @@ public:
   void InitGraphicsEngine(int, char** );
   void RunGraphicsEngine();
   void PrintError(const char *);
+  void AsymmetryAnalysis();
 
   double CalculateIntegratedCS();
+  double CalculateIntegratedCS(double);
   double CalculateLuminosity(double);
   double CalculateGaussianWeight();
   double CalculateHaloFraction();
