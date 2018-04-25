@@ -85,6 +85,14 @@ void Generator::Initialize(){
   
 }
 
+void Generator::Initialize(double beam_energy, double laser_energy, double polarization){
+
+  cs = new TF1("cs", this, &Generator::CrossSection, 0.0, 1.0, 3, "Generator", "CrossSection");
+  cs->SetParameters(beam_energy, laser_energy, polarization);
+  cs->SetNpx(1000);
+
+}
+
 void Generator::SetBeamEnergy(double energy){ 
   beam_energy = energy;
 }

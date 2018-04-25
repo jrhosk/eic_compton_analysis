@@ -38,8 +38,9 @@ int main(int argc, char *argv[])
 
   simulation->GetOptions(argv);
 
-  if(simulation->fAsymmetryAnalysis) simulation->AsymmetryAnalysis();
   if(simulation->fGraphicsShow) simulation->InitGraphicsEngine(argc, argv);
+  if(simulation->fAsymmetryAnalysis) simulation->AsymmetryAnalysis();
+  if(simulation->fVetrocAnalysis) simulation->vfTDCAnalysis();
 
   simulation->GenerateAsymmetry((char *)""); // The char * casting removes a deprecatred warning caused by difference between char * in C and C++
 
@@ -53,7 +54,9 @@ int main(int argc, char *argv[])
   std::vector <int> *otid  = 0;
   std::vector <int> *mtid  = 0;
   std::vector <int> *hitn  = 0;
-  std::vector <int> *totEdep  = 0;
+  std::vector <int> *procID  = 0;
+
+  std::vector <double> *totEdep  = 0;
   
   std::vector <int> BinContent(simulation->beam.strip_number);
   std::fill(BinContent.begin(), BinContent.end(), 0);  
@@ -83,6 +86,7 @@ int main(int argc, char *argv[])
   fChain->SetBranchStatus("otid", 1);
   fChain->SetBranchStatus("mtid", 1);
   fChain->SetBranchStatus("totEdep", 1);
+  fChain->SetBranchStatus("procID", 1);
   
   fChain->SetBranchAddress("id", &id);
   fChain->SetBranchAddress("pid", &pid);
@@ -90,37 +94,44 @@ int main(int argc, char *argv[])
   fChain->SetBranchAddress("otid", &otid);
   fChain->SetBranchAddress("mtid", &mtid);
   fChain->SetBranchAddress("totEdep", &totEdep);
+  fChain->SetBranchAddress("procID", &procID);
   
   if(!(fChain->GetLeaf("id"))){
     std::cout << "Error finding leaf" << std::endl;
     exit(1);
   }
     
-  Int_t ID = 0;
+  int ID = 0;
   
-  for(Int_t i = 0; i < entries; i++){
+  for(int i = 0; i < entries; i++){
     fChain->GetEntry(i);
-    for(Int_t j = 0; j < (Int_t)id->size(); j++){
+    for(int j = 0; j < (int)id->size(); j++){
       if(id->at(j) < (simulation->beam.strip_number)+1){
-	ID = id->at(j);
-	BinContent[ID]++;
+
+	if(totEdep->at(j) > simulation->fEnergyCut){
+	  ID = id->at(j);
+	  BinContent[ID]++;
+	}
+
       }
-    }
+    } 
   }
+  
   double w = 1;
   if(simulation->fBackgroundWeight) w = (pchep::coulomb*simulation->pressure_conversion)/entries; 
   if(simulation->fComptonWeight)    w = (simulation->compton.luminosity*simulation->compton.cross_section)/entries; // units Hz corrected for cross_section/luminosity weighted
   if(simulation->fHaloWeight){
     simulation->CalculateHaloFraction();
-    w = (simulation->compton.halo_ratio*pchep::coulomb*simulation->compton.gaussian_weight)/entries; // units Hz corrected for luminosity weighted for halo
+    w = (simulation->compton.halo_ratio*pchep::coulomb*simulation->compton.gaussian_weight)/entries; // weighted for halo
+    std::cout << simulation->compton.halo_ratio << " " << pchep::coulomb << " " << simulation->compton.gaussian_weight << std::endl; 
   }
 
   TH1D *hist = new TH1D("hist", "hist", simulation->beam.strip_number, 1, simulation->beam.strip_number);
 
-  for(Int_t i = 1; i < (simulation->beam.strip_number)+1; i++){
+  for(int i = 1; i < (simulation->beam.strip_number)+1; i++){
     int entry_count = BinContent[i]; 
-    std::cout << "Strip: " << i << " entry# " << entry_count << std::endl;
-    for(Int_t j = 0; j < entry_count; j++){
+
+    for(int j = 0; j < entry_count; j++){
       hist->Fill(i, w);  
     }
   }
@@ -142,7 +153,10 @@ int main(int argc, char *argv[])
   hist->GetXaxis()->SetTitleOffset(1.2);
   hist->SetTitle("Detector Rate");
 
-  canvas->SaveAs(TString(simulation->fFileOutput));
+  std::cout << "Entries:\t" << hist->GetEntries() << std::endl;
+
+  canvas->SaveAs(Form("output/%s.C", (simulation->fFileOutput).c_str()));
+  canvas->SaveAs(Form("output/%s.root", (simulation->fFileOutput).c_str()));
   
   if(simulation->fGraphicsShow) simulation->RunGraphicsEngine();
   

@@ -97,6 +97,7 @@ public:
   Double_t CrossSection(Double_t *x, Double_t *par);
 
   void Initialize();
+  void Initialize(double, double, double);
   void SetBeamEnergy(double);
   void SetLaserEnergy(double);
   void SetLaserWaveLength(double);

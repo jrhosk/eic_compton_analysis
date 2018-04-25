@@ -54,6 +54,8 @@ public:
   std::string fFileLeft;
   std::string fFileOutput;
 
+  double fEnergyCut;       // Energy cut in MeV
+
   bool fGraphicsShow;
   bool fFileSet;
   bool fFileLeftSet;
@@ -63,6 +65,8 @@ public:
   bool fHaloWeight;
   bool fApertureSize;
   bool fAsymmetryAnalysis;
+  bool fVetrocAnalysis;
+  bool fResolutionAnalysis;
 
   // Functions
 
@@ -78,6 +82,8 @@ public:
   void RunGraphicsEngine();
   void PrintError(const char *);
   void AsymmetryAnalysis();
+  void vfTDCAnalysis();
+  void ScaleAsymmetry(TH1D *, TH1D *, TH1D *, int);
 
   double CalculateIntegratedCS();
   double CalculateIntegratedCS(double);

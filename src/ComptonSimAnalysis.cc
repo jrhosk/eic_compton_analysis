@@ -39,15 +39,17 @@
 
 ComptonSimAnalysis::ComptonSimAnalysis()
 {
-  fGraphicsShow      = false;
-  fFileSet           = false;
-  fFileLeftSet       = false;
-  fFileRightSet      = false;
-  fComptonWeight     = false;
-  fBackgroundWeight  = false;
-  fHaloWeight        = false;
-  fApertureSize      = false;
-  fAsymmetryAnalysis = false;
+  fGraphicsShow       = false;
+  fFileSet            = false;
+  fFileLeftSet        = false;
+  fFileRightSet       = false;
+  fComptonWeight      = false;
+  fBackgroundWeight   = false;
+  fHaloWeight         = false;
+  fApertureSize       = false;
+  fAsymmetryAnalysis  = false;
+  fResolutionAnalysis = false;
+  fVetrocAnalysis     = false;
 
   beam.beam_energy  = 5;         // GeV
   beam.laser_energy = 2.33e-9;   // GeV
@@ -55,16 +57,16 @@ ComptonSimAnalysis::ComptonSimAnalysis()
   beam.sigma_ex     = 226.6e-6;  // meters
   beam.sigma_ey     = 99e-6;     // meters 
   beam.sigma_g      = 151.4e-6; 
-  beam.strip_number = 200;
+  beam.strip_number = 10300;
 
   compton.halo_amplitude = 7.2e-5;
-  compton.halo_scale_x = 3.3;
+  compton.halo_scale_x = 10;
   compton.halo_scale_y = 10;
   compton.gaussian_weight = 4.40643e-07;
-  compton.aperture_size = 0.5;
+  compton.aperture_size = 0.8;
 
-  fFileOutput = "analysis.C";
-
+  fFileOutput = "analysis";
+  fEnergyCut = 0;                // MeV
 }
 
 ComptonSimAnalysis::~ComptonSimAnalysis()
@@ -126,9 +128,32 @@ void ComptonSimAnalysis::GetOptions(char **options){
       fApertureSize = true;
       compton.aperture_size = atof(options[i+1]);
     }
+    if(flag.compare("--energy-cut") == 0){
+      flag.clear();
+      fEnergyCut = atof(options[i+1]);
+
+      Sys::SysMsg << "Energy cut:\t" 
+		  << options[i+1] << Sys::endl;
+     
+    }
+    if(flag.compare("--strip-number") == 0){
+      flag.clear();
+      beam.strip_number = atof(options[i+1]);
+      Sys::SysMsg << "Number of strips set: "
+		  << beam.strip_number 
+		  << Sys::endl;
+    }
     if(flag.compare("--asymmetry") == 0){
       flag.clear();
       fAsymmetryAnalysis = true;
+    }
+    if(flag.compare("--resolution-analysis") == 0){
+      flag.clear();
+      fResolutionAnalysis = true;
+    }
+    if(flag.compare("--vftdc-analysis") == 0){
+      flag.clear();
+      fVetrocAnalysis = true;
     }
    if(flag.compare("--file-right") == 0){
      std::string opt(options[i+1]);
@@ -163,9 +188,9 @@ void ComptonSimAnalysis::GetOptions(char **options){
 	beam.sigma_ex = 226.6e-6;
 	beam.sigma_ey = 99e-6; 
       }
-      if(beam.beam_energy == 11) {
-	beam.sigma_ex = 356e-6;
-	beam.sigma_ey = 115e-6;
+      if(beam.beam_energy == 10) {
+	beam.sigma_ex = 434e-6;
+	beam.sigma_ey = 199e-6;
       }
     }
 
@@ -199,6 +224,11 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
   double cs_right = CalculateIntegratedCS(1);
   double cs_left  = CalculateIntegratedCS(-1);
 
+  std::cout << "Cross sections:\n" 
+	    << "Left:\t" << cs_left
+	    << "\nRight:\t" << cs_right << std::endl;
+	     
+
   TFile *file_left = new TFile(fFileLeft.c_str());
   TTree *tree_left = (TTree *)file_left->Get("flux");
 
@@ -215,44 +245,36 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
     Sys::SysError << "No events found. Exiting." << Sys::endl;
     exit(1);
   }
-  TH1D *left = new TH1D("left", "left", 251, 0, 251);
-  TH1D *right = new TH1D("right", "right", 251, 0, 251);
+  TH1D *left = new TH1D("left", "left", beam.strip_number, 1, beam.strip_number);
+  TH1D *right = new TH1D("right", "right", beam.strip_number, 1, beam.strip_number);
 
   canvas->cd();
 
   std::cout << "Histograming data." << std::endl;
 
-  tree_left->Draw("id>>left", "id < 251", "goff");
-  left = (TH1D *)gDirectory->Get("left");
-  left->Draw();
-
-  tree_right->Draw("id>>right", "id < 251", "goff");
-  right = (TH1D *)gDirectory->Get("right");
-  right->Draw();
-
-  std::vector <int> nLeft(251);
-  std::vector <int> nRight(251);
-  std::vector <double> Error(251);
-
-  std::fill(nLeft.begin(), nLeft.end(), 0);  
-  std::fill(nRight.begin(), nRight.end(), 0);  
-
   std::vector <int> *id_l = 0;
   std::vector <int> *id_r = 0;
+
+  std::vector <double> *totEdep_l = 0;
+  std::vector <double> *totEdep_r = 0;
 
   int ID = 0;
 
   tree_left->ResetBranchAddresses();
   tree_left->SetBranchStatus("*", 0);
   tree_left->SetBranchStatus("id", 1);
+  tree_left->SetBranchStatus("totEdep", 1);
 
   tree_left->SetBranchAddress("id", &id_l);
+  tree_left->SetBranchAddress("totEdep", &totEdep_l);
 
   tree_right->ResetBranchAddresses();
   tree_right->SetBranchStatus("*", 0);
   tree_right->SetBranchStatus("id", 1);
+  tree_right->SetBranchStatus("totEdep", 1);
 
   tree_right->SetBranchAddress("id", &id_r);
+  tree_right->SetBranchAddress("totEdep", &totEdep_r);
 
   if(!(tree_left->GetLeaf("id"))){
     Sys::SysError << "Error finding leaf" << Sys::endl;
@@ -269,92 +291,262 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
   for(int i = 0; i < lentries; i++){
     tree_left->GetEntry(i);
     for(int j = 0; j < (int)id_l->size(); j++){
-      if(id_l->at(j) < 201){
+      if(id_l->at(j) < (beam.strip_number+1)){
    	ID = id_l->at(j);
-  	nLeft[ID]++;
+	if(totEdep_l->at(j) > fEnergyCut)
+	  left->Fill(ID);
       }
     }
   }
   for(int i = 0; i < rentries; i++){
     tree_right->GetEntry(i);
     for(int j = 0; j < (int)id_r->size(); j++){
-      if(id_r->at(j) < 201){
+      if(id_r->at(j) < (beam.strip_number+1)){
    	ID = id_r->at(j);
-   	nRight[ID]++;
+	if(totEdep_r->at(j) > fEnergyCut)
+	  right->Fill(ID);
       }
     }
   }
 
-  TF1 *fn_l = new TF1("fn_1", "[0]", 1, 250);
+  TF1 *fn_l = new TF1("fn_1", "[0]", 1, beam.strip_number+1);
   fn_l->SetParameter(0,1);
 
-  TF1 *fn_r = new TF1("fn_r", "[0]", 1, 250);
+  TF1 *fn_r = new TF1("fn_r", "[0]", 1, beam.strip_number+1);
   fn_r->SetParameter(0,1);
 
-  TH1D *yield_l = (TH1D *)left->Clone("yield_l");
-  TH1D *yield_r = (TH1D *)right->Clone("yield_r");
+  TH1D *raw_yield = (TH1D *)left->Clone("left");
 
+  raw_yield->Add(right, 1);
+  
   left->Multiply(fn_l, cs_left);
   right->Multiply(fn_r, cs_right);
 
-  TH1D *diff = (TH1D *)left->Clone("diff");
-  TH1D *sum  = (TH1D *)left->Clone("sum");
+  TH1D *asym = (TH1D *)left->Clone("asym");
+  TH1D *yield  = (TH1D *)left->Clone("yield");
 
-  diff->Add(right, -1);
-  sum->Add(right, 1);
+  asym->Add(right, -1);
+  yield->Add(right, 1);
 
-  diff->Divide(sum);
-  diff->SetStats(0);
+  asym->Divide(yield);
+  asym->SetStats(0);
 
-  std::fstream asymmetry;
-  std::fstream yield;
+  std::fstream asym_out;
+  std::fstream yield_out;
 
-  asymmetry.open("asymmetry.dat", std::fstream::out);
-  yield.open("yield.dat", std::fstream::out);
+  asym_out.open("asymmetry.dat", std::fstream::out);
+  yield_out.open("yield.dat", std::fstream::out);
 
-  if(!yield.is_open()){ 
+  if(!yield_out.is_open()){ 
+    std::cout << "Failure." << std::endl;
+    exit(1);
+  }
+
+  std::cout << "Strip\t|\tAsymmetry\t|\tBin Error\t|\tCalc Error\t|\tnL\t|\tnR" << std::endl;
+  
+  for(Int_t i = 1; i < (beam.strip_number+1); i++){
+    
+    if((raw_yield->GetBinContent(i)) == 0){
+      raw_yield->SetBinError(i, 0.0);
+      asym->SetBinError(i, 0.0);
+    }
+    else{
+      raw_yield->SetBinError(i, 1/TMath::Sqrt(raw_yield->GetBinContent(i)));
+      asym->SetBinError(i, 1/TMath::Sqrt(raw_yield->GetBinContent(i)));
+    }
+    
+    asym_out << i << " " 
+   	     << asym->GetBinContent(i) << " "
+   	     << asym->GetBinError(i) << "\n";
+    
+    
+    std::cout << i << " " 
+   	      << asym->GetBinContent(i) << " "
+       	      << asym->GetBinError(i) << std::endl;
+    yield_out << i << " " 
+   	      << raw_yield->GetBinContent(i) << " "
+   	      << raw_yield->GetBinError(i) << "\n";
+	      }
+  asym_out.close();
+  yield_out.close();
+  
+  std::cout << "Histograming asymmetry." << std::endl;
+
+  asym->Draw(); 
+  asym->SetLineColor(9);
+  asym->SetLineWidth(2);
+  asym->SetTitle("Compton Detector Asymmetry");
+
+  canvas->SaveAs("output/asymmetry_nowindow.png");
+  canvas->SaveAs("output/asymmetry_nowindow.C");
+  canvas->SaveAs("output/asymmetry_nowindow.root");
+  delete canvas;
+  
+  Sys::SysMsg << "Analysis done." << Sys::endl;
+  Sys::SysMsg << left->GetBinContent(2) << Sys::endl;
+
+  if(fResolutionAnalysis){
+    ScaleAsymmetry(left, right, raw_yield, 2);
+    ScaleAsymmetry(left, right, raw_yield, 5);
+    ScaleAsymmetry(left, right, raw_yield, 10);
+    ScaleAsymmetry(left, right, raw_yield, 12);
+    ScaleAsymmetry(left, right, raw_yield, 20);
+  }
+
+  exit(0);
+}
+
+void ComptonSimAnalysis::vfTDCAnalysis()
+{
+
+  Sys::SysMsg << "Processing vfTDC rootfile." << Sys::endl;
+
+  if(!(fFileSet)){
+    PrintError("In order to access vdTDC analysis, please provide vfTDC rootfile. Please use --help for more info.");
+    exit(1);
+  }
+
+  TFile *file_vetroc = new TFile(fFileLocation.c_str());
+  TTree *tree_vetroc = (TTree *)file_vetroc->Get("T");
+
+  TCanvas *canvas = new TCanvas("canvas", "canvas", 1200, 800);
+  canvas->SetTitle("Vetroc hits");
+
+  int entries = tree_vetroc->GetEntries();
+  Sys::SysMsg << "Events:." << entries << Sys::endl;
+
+  if( entries == 0 ){
+    Sys::SysError << "No events found. Exiting." << __FUNCTION__ << Sys::endl;
+    exit(1);
+  }
+  TH1D *nhits_hist = new TH1D("nhits_hist", "nhits_hist", 192, 1, 192);
+
+  canvas->cd();
+
+  std::cout << "Histograming data." << std::endl;
+
+  Double_t nhits[192];
+
+  int ID = 0;
+
+  Sys::SysMsg << "Accessing rootfile." << Sys::endl;
+
+  tree_vetroc->ResetBranchAddresses();
+  tree_vetroc->SetBranchStatus("*", 0);
+  tree_vetroc->SetBranchStatus("nhit", 1);
+
+  tree_vetroc->SetBranchAddress("nhit", &nhits);
+
+  for(int i = 0; i < entries; i++){
+    tree_vetroc->GetEntry(i);
+    for(int j = 0; j < 192; j++){
+      if(nhits[j] > 0){
+   	ID = j;
+	nhits_hist->Fill(ID);
+      }
+    }
+  }
+  
+  std::cout << "Histograming vfTDC hits." << std::endl;
+
+  nhits_hist->Draw(); 
+  nhits_hist->SetLineColor(9);
+  nhits_hist->SetLineWidth(2);
+  nhits_hist->SetTitle("vfTDC Hits per Channel");
+
+  canvas->SaveAs("output/vfTDC.png");
+  canvas->SaveAs("output/vfTDC.C");
+
+  delete canvas;
+  
+  Sys::SysMsg << "Analysis done." << Sys::endl;
+
+  exit(0);
+}
+
+void ComptonSimAnalysis::ScaleAsymmetry(TH1D *l, TH1D* r, TH1D *y_raw, int multiplier = 1)
+{
+  if(!(fFileLeftSet && fFileRightSet)){
+    PrintError("In order to access asymetry analysis, two root files must be provided. Please use --help for more info.");
+    exit(1);
+  }
+
+  // Make a copy of the left and right histograms so that they are not edited directly
+
+  TH1D *left  = (TH1D *)l->Clone("asym");
+  TH1D *right  = (TH1D *)r->Clone("asym");
+  TH1D *raw_yield = (TH1D *)y_raw->Clone("raw_yield");
+
+  const int strips = (beam.strip_number)/multiplier;
+
+  TCanvas *canvas = new TCanvas("canvas", "canvas", 1200, 800);
+  canvas->SetTitle("Compton Detector Scaled Asymmetry");
+
+  left->Rebin(multiplier);
+  right->Rebin(multiplier);
+  raw_yield->Rebin(multiplier);
+
+  TH1D *asym = (TH1D *)left->Clone("asym");
+  TH1D *yield  = (TH1D *)left->Clone("yield");
+
+  asym->Add(right, -1);
+  yield->Add(right, 1);
+
+  asym->Divide(yield);
+  asym->SetStats(0);
+
+  std::fstream asym_out;
+  std::fstream yield_out;
+
+  asym_out.open(Form("asymmetry_m%d.dat", multiplier), std::fstream::out);
+  yield_out.open(Form("yield_m%d.dat", multiplier), std::fstream::out);
+
+  if(!yield_out.is_open()){ 
     std::cout << "Failure." << std::endl;
     exit(1);
   }
 
   std::cout << "Strip\t|\tAsymmetry\t|\tBin Error\t|\tCalc Error\t|\tnL\t|\tnR" << std::endl;
 
-  for(Int_t i = 0; i < 251; i++){
+  for(Int_t i = 1; i < (strips+1); i++){
 
-    Error[i] = 1/(TMath::Sqrt(nLeft[i] + nRight[i]));
-    if((nLeft[i] == 0) && (nRight[i]) == 0) Error[i] = 0;
-    
-    asymmetry << i << " " 
-	      << diff->GetBinContent(i) << " "
-	      <<  Error[i] << "\n";
+
+    if((raw_yield->GetBinContent(i)) == 0){
+      raw_yield->SetBinError(i, 0.0);
+      asym->SetBinError(i, 0.0);
+    }
+    else{
+      raw_yield->SetBinError(i, 1/TMath::Sqrt(raw_yield->GetBinContent(i)));
+      asym->SetBinError(i, 1/TMath::Sqrt(raw_yield->GetBinContent(i)));
+    }
+
+    asym_out << i << " " 
+	     << asym->GetBinContent(i) << " " 
+	     << asym->GetBinError(i) << "\n";
 
     std::cout << i << " " 
-       	      << diff->GetBinContent(i) << " "
-     	      << Error[i] << std::endl;
-    yield << i << " " 
-     	  << yield_l->GetBinContent(i) + yield_r->GetBinContent(i) << " "
-     	  << 1/TMath::Sqrt(yield_l->GetBinError(i) + yield_r->GetBinError(i)) << "\n";
+	      << raw_yield->GetBinContent(i) << " "
+     	      << raw_yield->GetBinError(i) << " " 
+     	      << asym->GetBinContent(i) << " "
+      	      << asym->GetBinError(i) << std::endl;
+    
+    yield_out << i << " " 
+	      << raw_yield->GetBinContent(i) << " "
+	      << raw_yield->GetBinError(i) << "\n";
   }
-
-  asymmetry.close();
-  yield.close();
+  asym_out.close();
+  yield_out.close();
 
   std::cout << "Histograming asymmetry." << std::endl;
 
-  diff->Draw(); 
-  diff->SetLineColor(9);
-  diff->SetLineWidth(2);
-  diff->SetTitle("Compton Detector Asymmetry");
+  asym->Draw(); 
+  asym->SetLineColor(9);
+  asym->SetLineWidth(2);
+  asym->SetTitle("Compton Detector Asymmetry");
 
-  canvas->SaveAs("asymmetry_nowindow.png");
-  canvas->SaveAs("asymmetry_nowindow.C");
-  
-  Sys::SysMsg << "Analysis done." << Sys::endl;
+  Sys::SysMsg << "Analysis scaling done." << Sys::endl;
 
-
-  exit(0);
 }
-
 
 double ComptonSimAnalysis::CalculateLuminosity(double current)
 {
@@ -387,6 +579,7 @@ double ComptonSimAnalysis::CalculateGaussianWeight()
   // the factor of ten is a multplier for the halo and the '1e2' is to convert to cm
   compton.gaussian_weight = boost::math::erfc(compton.aperture_size/(std::sqrt(2)*10e2*beam.sigma_ey));
   Sys::SysMsg << "\n>>>>> Gaussian weight: " << compton.gaussian_weight << Sys::endl;
+  std::cout << compton.aperture_size << " " << beam.sigma_ey << std::endl;
 
   return 0;
 }
@@ -413,11 +606,7 @@ void ComptonSimAnalysis::RunGraphicsEngine()
 
 double ComptonSimAnalysis::CalculateIntegratedCS()
 {
-
-  SetBeamEnergy(beam.beam_energy);
-  SetLaserEnergy(beam.laser_energy);
-  SetPolarization(beam.polarization);
-  Initialize(); 
+  Generator::Initialize(beam.beam_energy, beam.laser_energy, beam.polarization); 
 
   compton.cross_section = 2*TMath::Pi()*this->GetFunction((char *)"cs")->Integral(0,1);
 
@@ -426,11 +615,7 @@ double ComptonSimAnalysis::CalculateIntegratedCS()
 
 double ComptonSimAnalysis::CalculateIntegratedCS(double polarization)
 {
-
-  SetBeamEnergy(beam.beam_energy);
-  SetLaserEnergy(beam.laser_energy);
-  SetPolarization(polarization);
-  Initialize(); 
+  Generator::Initialize(beam.beam_energy, beam.laser_energy, polarization); 
 
   return(2*TMath::Pi()*this->GetFunction((char *)"cs")->Integral(0,1));
 }
