@@ -420,39 +420,51 @@ void ComptonSimAnalysis::vfTDCAnalysis()
     exit(1);
   }
   TH1D *nhits_hist = new TH1D("nhits_hist", "nhits_hist", 192, 1, 192);
+  TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 4500, 1, 4500);
 
   canvas->cd();
+  canvas->Divide(1,2);
 
   std::cout << "Histograming data." << std::endl;
 
   Double_t nhits[192];
+  Double_t firsthit[192];
 
   int ID = 0;
+  double TIME = 0;
 
   Sys::SysMsg << "Accessing rootfile." << Sys::endl;
 
   tree_vetroc->ResetBranchAddresses();
   tree_vetroc->SetBranchStatus("*", 0);
   tree_vetroc->SetBranchStatus("nhit", 1);
+  tree_vetroc->SetBranchStatus("FirstHit", 1);
 
   tree_vetroc->SetBranchAddress("nhit", &nhits);
+  tree_vetroc->SetBranchAddress("FirstHit", &firsthit);
 
   for(int i = 0; i < entries; i++){
     tree_vetroc->GetEntry(i);
     for(int j = 0; j < 192; j++){
       if(nhits[j] > 0){
    	ID = j;
+	TIME = 0.001*firsthit[j];
 	nhits_hist->Fill(ID);
+	firsthit_hist->Fill(TIME);
       }
     }
   }
   
   std::cout << "Histograming vfTDC hits." << std::endl;
 
+  canvas->cd(1);
   nhits_hist->Draw(); 
   nhits_hist->SetLineColor(9);
   nhits_hist->SetLineWidth(2);
   nhits_hist->SetTitle("vfTDC Hits per Channel");
+
+  canvas->cd(2);
+  firsthit_hist->Draw(); 
 
   canvas->SaveAs("output/vfTDC.png");
   canvas->SaveAs("output/vfTDC.C");
