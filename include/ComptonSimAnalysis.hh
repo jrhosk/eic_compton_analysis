@@ -17,6 +17,7 @@ public:
 
 
   static const double pressure_conversion = 1.3889e-12;
+  static const int lvl_one_accept = 128;
 
   // Structure
 
@@ -42,7 +43,6 @@ public:
     double sigma_g;
     double strip_number;
   };
-
 
   analysis compton;
   parameters beam;

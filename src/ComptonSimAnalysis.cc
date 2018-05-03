@@ -420,7 +420,7 @@ void ComptonSimAnalysis::vfTDCAnalysis()
     exit(1);
   }
   TH1D *nhits_hist = new TH1D("nhits_hist", "nhits_hist", 192, 1, 192);
-  TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 4500, 1, 4500);
+  TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 45000, 1, 4500);
 
   canvas->cd();
   canvas->Divide(1,2);
@@ -432,6 +432,7 @@ void ComptonSimAnalysis::vfTDCAnalysis()
 
   int ID = 0;
   double TIME = 0;
+  double max_time = 0;
 
   Sys::SysMsg << "Accessing rootfile." << Sys::endl;
 
@@ -445,10 +446,11 @@ void ComptonSimAnalysis::vfTDCAnalysis()
 
   for(int i = 0; i < entries; i++){
     tree_vetroc->GetEntry(i);
-    for(int j = 0; j < 192; j++){
+    for(int j = lvl_one_accept; j < 192; j++){
       if(nhits[j] > 0){
    	ID = j;
-	TIME = 0.001*firsthit[j];
+	TIME = 0.001*(firsthit[j]-firsthit[lvl_one_accept]);
+	if(TIME > max_time) max_time = TIME;
 	nhits_hist->Fill(ID);
 	firsthit_hist->Fill(TIME);
       }
@@ -465,6 +467,10 @@ void ComptonSimAnalysis::vfTDCAnalysis()
 
   canvas->cd(2);
   firsthit_hist->Draw(); 
+  firsthit_hist->SetLineColor(9);
+  firsthit_hist->SetLineWidth(2);
+  firsthit_hist->SetTitle("vfTDC Hit Timing");
+  firsthit_hist->GetXaxis()->SetRangeUser(lvl_one_accept, max_time*1.1);
 
   canvas->SaveAs("output/vfTDC.png");
   canvas->SaveAs("output/vfTDC.C");
