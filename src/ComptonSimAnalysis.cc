@@ -26,7 +26,7 @@
 
 #include "boost/filesystem.hpp"
 #include "boost/math/constants/constants.hpp"
-#include <boost/math/special_functions/erf.hpp>
+#include "boost/math/special_functions/erf.hpp"
 
 // Custom Libraries
 
@@ -60,13 +60,14 @@ ComptonSimAnalysis::ComptonSimAnalysis()
   beam.strip_number = 10300;
 
   compton.halo_amplitude = 7.2e-5;
-  compton.halo_scale_x = 10;
-  compton.halo_scale_y = 10;
+  compton.halo_scale_x = 10.0;
+  compton.halo_scale_y = 10.0;
   compton.gaussian_weight = 4.40643e-07;
   compton.aperture_size = 0.8;
 
   fFileOutput = "analysis";
   fEnergyCut = 0;                // MeV
+
 }
 
 ComptonSimAnalysis::~ComptonSimAnalysis()
@@ -106,14 +107,17 @@ void ComptonSimAnalysis::GetOptions(char **options){
     if(flag.compare("--compton-weight") == 0){
       flag.clear();
       fComptonWeight = true;
+      fFileOutput = "compton";
     }
     if(flag.compare("--background-weight") == 0){
       flag.clear();
       fBackgroundWeight = true;
+      fFileOutput = "background";
     }
     if(flag.compare("--halo-weight") == 0){
       flag.clear();
       fHaloWeight = true;
+      fFileOutput = "halo";
     }
     if(flag.compare("--polarization") == 0){
       flag.clear();
@@ -177,6 +181,14 @@ void ComptonSimAnalysis::GetOptions(char **options){
       flag.clear();
       beam.strip_number = atof(options[i+1]);
     }
+    if(flag.compare("--halo-scale-x") == 0){
+      flag.clear();
+      compton.halo_scale_x = atof(options[i+1]);
+    }
+    if(flag.compare("--halo-scale-y") == 0){
+      flag.clear();
+      compton.halo_scale_y = atof(options[i+1]);
+    }
     if(flag.compare("--energy") == 0){
       flag.clear();
       beam.beam_energy = atof(options[i+1]);
@@ -217,16 +229,16 @@ void ComptonSimAnalysis::GetOptions(char **options){
 void ComptonSimAnalysis::AsymmetryAnalysis()
 {
   if(!(fFileLeftSet && fFileRightSet)){
-    PrintError("In order to access asymetry analysis, two root files must be provided. Please use --help for more info.");
+    Sys::SysError << "In order to access asymetry analysis, two root files must be provided. Please use --help for more info." << Sys::endl;;
     exit(1);
   }
 
   double cs_right = CalculateIntegratedCS(1);
   double cs_left  = CalculateIntegratedCS(-1);
 
-  std::cout << "Cross sections:\n" 
+  Sys::SysCout << "Cross sections:\n" 
 	    << "Left:\t" << cs_left
-	    << "\nRight:\t" << cs_right << std::endl;
+	    << "\nRight:\t" << cs_right << Sys::endl;
 	     
 
   TFile *file_left = new TFile(fFileLeft.c_str());
@@ -250,7 +262,7 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
 
   canvas->cd();
 
-  std::cout << "Histograming data." << std::endl;
+  Sys::SysCout << "Histograming data." << Sys::endl;
 
   std::vector <int> *id_l = 0;
   std::vector <int> *id_r = 0;
@@ -286,7 +298,7 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
     exit(1);
   }
 
-  std::cout << (int)id_l->size() << std::endl;
+  Sys::SysCout << (int)id_l->size() << Sys::endl;
 
   for(int i = 0; i < lentries; i++){
     tree_left->GetEntry(i);
@@ -338,11 +350,11 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
   yield_out.open("yield.dat", std::fstream::out);
 
   if(!yield_out.is_open()){ 
-    std::cout << "Failure." << std::endl;
+    Sys::SysError << "Failure." << Sys::endl;
     exit(1);
   }
 
-  std::cout << "Strip\t|\tAsymmetry\t|\tBin Error\t|\tCalc Error\t|\tnL\t|\tnR" << std::endl;
+  Sys::SysCout << "Strip\t|\tAsymmetry\t|\tBin Error\t|\tCalc Error\t|\tnL\t|\tnR" << Sys::endl;
   
   for(Int_t i = 1; i < (beam.strip_number+1); i++){
     
@@ -370,7 +382,7 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
   asym_out.close();
   yield_out.close();
   
-  std::cout << "Histograming asymmetry." << std::endl;
+  Sys::SysMsg << "Histograming asymmetry." << Sys::endl;
 
   asym->Draw(); 
   asym->SetLineColor(9);
@@ -402,7 +414,7 @@ void ComptonSimAnalysis::vfTDCAnalysis()
   Sys::SysMsg << "Processing vfTDC rootfile." << Sys::endl;
 
   if(!(fFileSet)){
-    PrintError("In order to access vdTDC analysis, please provide vfTDC rootfile. Please use --help for more info.");
+    Sys::SysError << __FUNCTION__ << " In order to access vdTDC analysis, please provide vfTDC rootfile. Please use --help for more info." << Sys::endl;;
     exit(1);
   }
 
@@ -416,16 +428,16 @@ void ComptonSimAnalysis::vfTDCAnalysis()
   Sys::SysMsg << "Events:." << entries << Sys::endl;
 
   if( entries == 0 ){
-    Sys::SysError << "No events found. Exiting." << __FUNCTION__ << Sys::endl;
+    Sys::SysError << __FUNCTION__  << " No events found. Exiting." << Sys::endl;
     exit(1);
   }
   TH1D *nhits_hist = new TH1D("nhits_hist", "nhits_hist", 192, 1, 192);
-  TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 45000, 1, 4500);
+  TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 500, -500.0, 4500.0);
 
   canvas->cd();
   canvas->Divide(1,2);
 
-  std::cout << "Histograming data." << std::endl;
+  Sys::SysCout << "Histograming data." << Sys::endl;
 
   Double_t nhits[192];
   Double_t firsthit[192];
@@ -433,6 +445,7 @@ void ComptonSimAnalysis::vfTDCAnalysis()
   int ID = 0;
   double TIME = 0;
   double max_time = 0;
+  double min_time = 0;
 
   Sys::SysMsg << "Accessing rootfile." << Sys::endl;
 
@@ -446,18 +459,23 @@ void ComptonSimAnalysis::vfTDCAnalysis()
 
   for(int i = 0; i < entries; i++){
     tree_vetroc->GetEntry(i);
-    for(int j = lvl_one_accept; j < 192; j++){
-      if(nhits[j] > 0){
+    for(int j = (lvl_one_accept + 1); j < 192; j++){
+      if( (nhits[j] > 0) && j == 148){
+      // if( (nhits[j] > 0)){
    	ID = j;
 	TIME = 0.001*(firsthit[j]-firsthit[lvl_one_accept]);
 	if(TIME > max_time) max_time = TIME;
-	nhits_hist->Fill(ID);
-	firsthit_hist->Fill(TIME);
+	if(TIME < min_time) min_time = TIME;
+
+	if(TIME > 0){
+	  nhits_hist->Fill(ID);
+	  firsthit_hist->Fill(TIME);
+	}
       }
     }
   }
   
-  std::cout << "Histograming vfTDC hits." << std::endl;
+  Sys::SysCout << "Histograming vfTDC hits." << Sys::endl;
 
   canvas->cd(1);
   nhits_hist->Draw(); 
@@ -470,7 +488,7 @@ void ComptonSimAnalysis::vfTDCAnalysis()
   firsthit_hist->SetLineColor(9);
   firsthit_hist->SetLineWidth(2);
   firsthit_hist->SetTitle("vfTDC Hit Timing");
-  firsthit_hist->GetXaxis()->SetRangeUser(lvl_one_accept, max_time*1.1);
+  firsthit_hist->GetXaxis()->SetRangeUser(min_time*0.9, max_time*1.1);
 
   canvas->SaveAs("output/vfTDC.png");
   canvas->SaveAs("output/vfTDC.C");
@@ -485,7 +503,7 @@ void ComptonSimAnalysis::vfTDCAnalysis()
 void ComptonSimAnalysis::ScaleAsymmetry(TH1D *l, TH1D* r, TH1D *y_raw, int multiplier = 1)
 {
   if(!(fFileLeftSet && fFileRightSet)){
-    PrintError("In order to access asymetry analysis, two root files must be provided. Please use --help for more info.");
+    Sys:: SysError << __FUNCTION__ << " In order to access asymetry analysis, two root files must be provided. Please use --help for more info." << Sys::endl;
     exit(1);
   }
 
@@ -524,7 +542,7 @@ void ComptonSimAnalysis::ScaleAsymmetry(TH1D *l, TH1D* r, TH1D *y_raw, int multi
     exit(1);
   }
 
-  std::cout << "Strip\t|\tAsymmetry\t|\tBin Error\t|\tCalc Error\t|\tnL\t|\tnR" << std::endl;
+  Sys::SysCout << "Strip\t|\tAsymmetry\t|\tBin Error\t|\tCalc Error\t|\tnL\t|\tnR" << Sys::endl;
 
   for(Int_t i = 1; i < (strips+1); i++){
 
@@ -555,7 +573,7 @@ void ComptonSimAnalysis::ScaleAsymmetry(TH1D *l, TH1D* r, TH1D *y_raw, int multi
   asym_out.close();
   yield_out.close();
 
-  std::cout << "Histograming asymmetry." << std::endl;
+  Sys::SysCout << "Histograming asymmetry." << Sys::endl;
 
   asym->Draw(); 
   asym->SetLineColor(9);
@@ -591,7 +609,7 @@ bool ComptonSimAnalysis::OpenFile(TChain *fChain)
 double ComptonSimAnalysis::CalculateGaussianWeight()
 {
   if(!fApertureSize){
-    Sys::SysError << "Aperture size not defined. Using default aperture size (+- 0.5 cm). Please refer to --help for instruction on setting this value." << Sys::endl;
+    Sys::SysError << __FUNCTION__ << " Aperture size not defined. Using default aperture size (+- 0.5 cm). Please refer to --help for instruction on setting this value." << Sys::endl;
     return 0;
   }
   // the factor of ten is a multplier for the halo and the '1e2' is to convert to cm
@@ -636,12 +654,6 @@ double ComptonSimAnalysis::CalculateIntegratedCS(double polarization)
   Generator::Initialize(beam.beam_energy, beam.laser_energy, polarization); 
 
   return(2*TMath::Pi()*this->GetFunction((char *)"cs")->Integral(0,1));
-}
-
-void ComptonSimAnalysis::PrintError(const char *message)
-{
-  Sys::SysError << message << "\n" << Sys::endl;
-  return;
 }
 
 #endif

@@ -45,10 +45,10 @@ int main(int argc, char *argv[])
   simulation->GenerateAsymmetry((char *)""); // The char * casting removes a deprecatred warning caused by difference between char * in C and C++
 
   simulation->CalculateIntegratedCS();
-  std::cout << "Integrated cross section: " << simulation->compton.cross_section << std::endl;
+  Sys::SysCout << "Integrated cross section: " << simulation->compton.cross_section << Sys::endl;
   simulation->CalculateLuminosity(1);
   simulation->CalculateGaussianWeight();
-
+  
   std::vector <int> *id    = 0;
   std::vector <int> *pid   = 0;
   std::vector <int> *otid  = 0;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   std::fill(BinContent.begin(), BinContent.end(), 0);  
 
   if(!(simulation->fFileSet)){
-    std::cout << "Must define rootfile first. Exiting." << std::endl;
+    Sys::SysError << "Must define rootfile first. Exiting." << Sys::endl;
     exit(1);
   }  
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
   int entries = fChain->GetEntries();
   
   if(entries == 0){
-    simulation->PrintError((const char*)"No events found. Exiting.");
+    Sys::SysError << __FUNCTION__ << " No events found. Exiting" << Sys::endl;
     exit(1);
   }
   
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
   fChain->SetBranchAddress("procID", &procID);
   
   if(!(fChain->GetLeaf("id"))){
-    std::cout << "Error finding leaf" << std::endl;
+    Sys::SysError << "Error finding leaf" << Sys::endl;
     exit(1);
   }
     
@@ -123,7 +123,9 @@ int main(int argc, char *argv[])
   if(simulation->fHaloWeight){
     simulation->CalculateHaloFraction();
     w = (simulation->compton.halo_ratio*pchep::coulomb*simulation->compton.gaussian_weight)/entries; // weighted for halo
-    std::cout << simulation->compton.halo_ratio << " " << pchep::coulomb << " " << simulation->compton.gaussian_weight << std::endl; 
+    std::cout << "Halo: ratio:" << simulation->compton.halo_ratio << std::endl;
+    std::cout << "\nGaussian weight:  " << simulation->compton.gaussian_weight << std::endl;
+
   }
 
   TH1D *hist = new TH1D("hist", "hist", simulation->beam.strip_number, 1, simulation->beam.strip_number);
@@ -136,10 +138,21 @@ int main(int argc, char *argv[])
     }
   }
   
-    
-  std::cout << "<<<<< Histogram has " << hist->GetEntries() << " entries.\n" << std::endl;
-  std::cout << "<<<<< Integral:" << hist->Integral() << std::endl;
+  int max_bin =  hist->GetMaximumBin();
+  double max_bin_content = hist->GetBinContent(max_bin);
+
+  std::cout << "<<<<< Histogram maximum: " << hist->GetMaximumBin() << " " << hist->GetBinContent(max_bin) << Sys::endl;
+  std::cout << "<<<<< Histogram has " << hist->GetEntries() << " entries.\n" << Sys::endl;
+  std::cout << "<<<<< Integral:" << hist->Integral() << Sys::endl;
   
+  std::fstream halo_out;
+
+  halo_out.open("halo_out.dat", std::fstream::out | std::fstream::app);
+
+  halo_out << simulation->compton.halo_scale_x << " "
+	   << simulation->compton.halo_scale_y << " "
+	   << (1e-3)*hist->Integral() << std::endl;
+
   TCanvas *canvas = new TCanvas("canvas","canvas",1200, 600);
   canvas->cd();
   
@@ -153,7 +166,7 @@ int main(int argc, char *argv[])
   hist->GetXaxis()->SetTitleOffset(1.2);
   hist->SetTitle("Detector Rate");
 
-  std::cout << "Entries:\t" << hist->GetEntries() << std::endl;
+  std::cout << "Entries:\t" << hist->GetEntries() << Sys::endl;
 
   canvas->SaveAs(Form("output/%s.C", (simulation->fFileOutput).c_str()));
   canvas->SaveAs(Form("output/%s.root", (simulation->fFileOutput).c_str()));

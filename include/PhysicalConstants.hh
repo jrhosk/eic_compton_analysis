@@ -23,7 +23,7 @@ namespace pchep {
   static const double electron_charge = -1; 
   static const double e_SI = 1.602176487e-19; 
   static const double coulomb = -1*electron_charge/e_SI;
-  static const double classic_e_radius = 2.8179403227e-15;
+  static const double classic_e_radius = 2.8179403227e-15;   // Classical electron radius (meters)
 
   static const double electron_mass     = 0.510998910;       // MeV
   static const double electron_mass_GeV = 0.000510998910;    // GeV

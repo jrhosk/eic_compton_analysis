@@ -3,7 +3,8 @@
 
 namespace Sys {
   extern MsgStream::SystemMessage SysMsg;
-  extern MsgStream::SystemError SysError;
+  extern MsgStream::SystemError   SysError;
+  extern MsgStream::SystemOut     SysCout;
 
   static std::ostream& endl(std::ostream& stream)
   {

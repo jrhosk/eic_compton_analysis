@@ -16,7 +16,7 @@ private:
 public:
 
 
-  static const double pressure_conversion = 1.3889e-12;
+  static const double pressure_conversion = 1.315789e-12;
   static const int lvl_one_accept = 128;
 
   // Structure
@@ -80,7 +80,6 @@ public:
   void ParseDetectorFile(std::fstream &file);
   void InitGraphicsEngine(int, char** );
   void RunGraphicsEngine();
-  void PrintError(const char *);
   void AsymmetryAnalysis();
   void vfTDCAnalysis();
   void ScaleAsymmetry(TH1D *, TH1D *, TH1D *, int);

@@ -34,6 +34,17 @@ public:
       return *this;
     }
   };
+  struct SystemOut
+  {
+
+    template <typename T>  SystemOut& operator<<(const T& x)
+    {
+      std::cout << kWhiteFont << x;
+      
+      return *this;
+    }
+  };
+
 };  
 #endif
 

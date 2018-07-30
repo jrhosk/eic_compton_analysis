@@ -2,10 +2,23 @@
 #include "../include/Generator.hh"
 #include "TF2.h"
 #include "TF1.h"
+#include "TH1.h"
+#include "TChain.h"
 #include "TMath.h"
 #include "MsgStream.hh"
 #include "SysMsg.hh"
 
+// Boost libraries
+
+#include "boost/filesystem.hpp"
+#include "boost/math/constants/constants.hpp"
+#include "boost/math/special_functions/erf.hpp"
+
+// Custom Libraries
+
+#include "ComptonSimAnalysis.hh"
+#include "MsgStream.hh"
+#include "PhysicalConstants.hh"
 
 #ifdef Generator_cxx
 
@@ -192,11 +205,12 @@ double Generator::CalculateAsymmetry(double *x = 0, double *par = 0)
 
   double minus = rho*(1-alpha);
   double plus  = rho*(1+alpha);
-  double term1 = 1/( (std::pow(minus, 2)/(1-minus)) + 1 + std::pow((1-plus)/(1-minus),2));
+  double term1 = 1/((std::pow(minus, 2)/(1-minus)) + 1 + std::pow((1-plus)/(1-minus),2));
   double term2 = 1-plus;
   double term3 = 1-(1/std::pow(1-minus,2));
 
-  double asymmetry = term1*term2*term3;
+  // double asymmetry = term1*term2*term3;
+  double asymmetry = 2*boost::math::constants::pi<double>()*std::pow(pchep::classic_e_radius,2)*alpha*term1*term2*term3;
 
   return asymmetry;
 }
@@ -293,30 +307,30 @@ void Generator::BuildGeneratedAsymmetryPlot()
 void Generator::PrintEvent()
 {
 
-  std::cout << "\n=====================================\n" << std::endl;
+  Sys::SysCout << "\n=====================================\n" << Sys::endl;
 
-  std::cout << "<<<< Electron \n" << std::endl;
-  std::cout << "Electron theta: " << kinematics.electron_theta << std::endl;
-  std::cout << "Electron phi: " << kinematics.electron_phi << std::endl;
-  std::cout << "Electron Momentum: " << kinematics.electron_momentum << std::endl;
-  std::cout << "     ---------------------------     " << std::endl;
-  std::cout << "Electron px: " << kinematics.px << std::endl;
-  std::cout << "Electron py: " << kinematics.py << std::endl;
-  std::cout << "Electron pz: " << kinematics.pz << std::endl;
+  Sys::SysCout << "<<<< Electron \n" << Sys::endl;
+  Sys::SysCout << "Electron theta: " << kinematics.electron_theta << Sys::endl;
+  Sys::SysCout << "Electron phi: " << kinematics.electron_phi << Sys::endl;
+  Sys::SysCout << "Electron Momentum: " << kinematics.electron_momentum << Sys::endl;
+  Sys::SysCout << "     ---------------------------     " << Sys::endl;
+  Sys::SysCout << "Electron px: " << kinematics.px << Sys::endl;
+  Sys::SysCout << "Electron py: " << kinematics.py << Sys::endl;
+  Sys::SysCout << "Electron pz: " << kinematics.pz << Sys::endl;
 
-  std::cout << "\n\n\n" << std::endl;
+  Sys::SysCout << "\n\n\n" << Sys::endl;
 
-  std::cout << "<<<< Photon \n" << std::endl;
-  std::cout << "Photon theta: " << kinematics.photon_theta << std::endl;
-  std::cout << "Photon phi: " << kinematics.photon_phi << std::endl;
-  std::cout << "Photon Momentum: " << kinematics.photon_momentum << std::endl;
-  std::cout << "     ---------------------------     " << std::endl;
-  std::cout << "Photon px: " << kinematics.kx << std::endl;
-  std::cout << "Photon py: " << kinematics.ky << std::endl;
-  std::cout << "Photon pz: " << kinematics.kz << std::endl;
-  std::cout << "\nPhoton max: " << kinematics.kmax << std::endl;
+  Sys::SysCout << "<<<< Photon \n" << Sys::endl;
+  Sys::SysCout << "Photon theta: " << kinematics.photon_theta << Sys::endl;
+  Sys::SysCout << "Photon phi: " << kinematics.photon_phi << Sys::endl;
+  Sys::SysCout << "Photon Momentum: " << kinematics.photon_momentum << Sys::endl;
+  Sys::SysCout << "     ---------------------------     " << Sys::endl;
+  Sys::SysCout << "Photon px: " << kinematics.kx << Sys::endl;
+  Sys::SysCout << "Photon py: " << kinematics.ky << Sys::endl;
+  Sys::SysCout << "Photon pz: " << kinematics.kz << Sys::endl;
+  Sys::SysCout << "\nPhoton max: " << kinematics.kmax << Sys::endl;
 
-  std::cout << "\n=====================================\n" << std::endl;
+  Sys::SysCout << "\n=====================================\n" << Sys::endl;
 
 }
 
