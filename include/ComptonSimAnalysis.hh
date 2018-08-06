@@ -82,7 +82,6 @@ public:
   void InitGraphicsEngine(int, char** );
   void RunGraphicsEngine();
   void AsymmetryAnalysis();
-  // void vfTDCAnalysis();
   void ScaleAsymmetry(TH1D *, TH1D *, TH1D *, int);
 
   double CalculateIntegratedCS();
