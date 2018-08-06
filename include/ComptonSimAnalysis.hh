@@ -6,6 +6,7 @@
 
 #include "TApplication.h"
 #include "Generator.hh"
+#include "vfTDCAnalysis.hh"
 
 #include "boost/filesystem.hpp"
 
@@ -81,7 +82,7 @@ public:
   void InitGraphicsEngine(int, char** );
   void RunGraphicsEngine();
   void AsymmetryAnalysis();
-  void vfTDCAnalysis();
+  // void vfTDCAnalysis();
   void ScaleAsymmetry(TH1D *, TH1D *, TH1D *, int);
 
   double CalculateIntegratedCS();

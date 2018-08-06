@@ -15,7 +15,7 @@ all: analysis
 
 %.o: %.cc
 	${CC} ${CFLAGS} -c -o $@ $< 
-analysis : analysis.o ${SRC}/ComptonSimAnalysis.o ${SRC}/Generator.o ${SRC}/DataFile.o 
+analysis : analysis.o ${SRC}/ComptonSimAnalysis.o ${SRC}/Generator.o ${SRC}/DataFile.o ${SRC}/vfTDCAnalysis.o
 	${CC} ${INCLUDES} -o $@  ${CFLAGS} $^ ${ROOTLIBS} ${ROOTGLIBS} ${LIB}
 clean:
 	rm -f *.o *~ src/*.o src/*~ include/*~ config/*~

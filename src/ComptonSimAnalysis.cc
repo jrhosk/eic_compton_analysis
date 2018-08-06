@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <map>
 
 // Root libraries
 
@@ -408,97 +409,138 @@ void ComptonSimAnalysis::AsymmetryAnalysis()
   exit(0);
 }
 
-void ComptonSimAnalysis::vfTDCAnalysis()
-{
+// void ComptonSimAnalysis::vfTDCAnalysis()
+// {
 
-  Sys::SysMsg << "Processing vfTDC rootfile." << Sys::endl;
+//   Sys::SysMsg << "Processing vfTDC rootfile." << Sys::endl;
 
-  if(!(fFileSet)){
-    Sys::SysError << __FUNCTION__ << " In order to access vdTDC analysis, please provide vfTDC rootfile. Please use --help for more info." << Sys::endl;;
-    exit(1);
-  }
+//   if(!(fFileSet)){
+//     Sys::SysError << __FUNCTION__ << " In order to access vdTDC analysis, please provide vfTDC rootfile. Please use --help for more info." << Sys::endl;;
+//     exit(1);
+//   }
 
-  TFile *file_vetroc = new TFile(fFileLocation.c_str());
-  TTree *tree_vetroc = (TTree *)file_vetroc->Get("T");
+//   TFile *file_vetroc = new TFile(fFileLocation.c_str());
+//   TTree *tree_vetroc = (TTree *)file_vetroc->Get("T");
 
-  TCanvas *canvas = new TCanvas("canvas", "canvas", 1200, 800);
-  canvas->SetTitle("Vetroc hits");
+//   TCanvas *canvas = new TCanvas("canvas", "canvas", 1200, 800);
+//   canvas->SetTitle("Vetroc hits");
 
-  int entries = tree_vetroc->GetEntries();
-  Sys::SysMsg << "Events:." << entries << Sys::endl;
+//   int entries = tree_vetroc->GetEntries();
+//   Sys::SysMsg << "Events:." << entries << Sys::endl;
 
-  if( entries == 0 ){
-    Sys::SysError << __FUNCTION__  << " No events found. Exiting." << Sys::endl;
-    exit(1);
-  }
-  TH1D *nhits_hist = new TH1D("nhits_hist", "nhits_hist", 192, 1, 192);
-  TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 500, -500.0, 4500.0);
+//   if( entries == 0 ){
+//     Sys::SysError << __FUNCTION__  << " No events found. Exiting." << Sys::endl;
+//     exit(1);
+//   }
+//   TH1D *nhits_hist = new TH1D("nhits_hist", "nhits_hist", 192, 1, 192);
+//   TH1D *firsthit_hist = new TH1D("firsthit_hist", "firsthit_hist", 500, -500.0, 4500.0);
 
-  canvas->cd();
-  canvas->Divide(1,2);
+//   canvas->cd();
+//   canvas->Divide(1,2);
 
-  Sys::SysCout << "Histograming data." << Sys::endl;
+//   Sys::SysCout << "Histograming data." << Sys::endl;
 
-  Double_t nhits[192];
-  Double_t firsthit[192];
+//   Double_t nhits[192];
+//   Double_t firsthit[192];
 
-  int ID = 0;
-  double TIME = 0;
-  double max_time = 0;
-  double min_time = 0;
+//   int ID = 0;
+//   double TIME = 0;
+//   double max_time = 0;
+//   double min_time = 0;
 
-  Sys::SysMsg << "Accessing rootfile." << Sys::endl;
+//   Sys::SysMsg << "Accessing rootfile." << Sys::endl;
 
-  tree_vetroc->ResetBranchAddresses();
-  tree_vetroc->SetBranchStatus("*", 0);
-  tree_vetroc->SetBranchStatus("nhit", 1);
-  tree_vetroc->SetBranchStatus("FirstHit", 1);
+//   tree_vetroc->ResetBranchAddresses();
+//   tree_vetroc->SetBranchStatus("*", 0);
+//   tree_vetroc->SetBranchStatus("nhit", 1);
+//   tree_vetroc->SetBranchStatus("FirstHit", 1);
 
-  tree_vetroc->SetBranchAddress("nhit", &nhits);
-  tree_vetroc->SetBranchAddress("FirstHit", &firsthit);
+//   tree_vetroc->SetBranchAddress("nhit", &nhits);
+//   tree_vetroc->SetBranchAddress("FirstHit", &firsthit);
 
-  for(int i = 0; i < entries; i++){
-    tree_vetroc->GetEntry(i);
-    for(int j = (lvl_one_accept + 1); j < 192; j++){
-      if( (nhits[j] > 0) && j == 148){
-      // if( (nhits[j] > 0)){
-   	ID = j;
-	TIME = 0.001*(firsthit[j]-firsthit[lvl_one_accept]);
-	if(TIME > max_time) max_time = TIME;
-	if(TIME < min_time) min_time = TIME;
+//   std::vector <TH1 *> hist_chan;
+//   std::vector <TH1 *> hist_time;
 
-	if(TIME > 0){
-	  nhits_hist->Fill(ID);
-	  firsthit_hist->Fill(TIME);
-	}
-      }
-    }
-  }
+//   std::map <int, int> foundChannel;
+
+//   for(int i = 0; i < entries; i++){
+//     tree_vetroc->GetEntry(i);
+//     for(int j = (lvl_one_accept + 1); j < 192; j++){
+//       if( (nhits[j] > 0) && j == 157){
+//       // if( (nhits[j] > 0)){
+//    	ID = j;
+// 	TIME = 0.001*(firsthit[j]-firsthit[lvl_one_accept]);
+// 	if(TIME > max_time) max_time = TIME;
+// 	if(TIME < min_time) min_time = TIME;
+
+// 	if(TIME > 0){
+// 	  // hist_chan.push_back(new TH1D(Form("hist_chan_%i", j), 
+// 	  // 			       Form("hist_chan_%i", j), 
+// 	  // 			       192, 1.0, 192.0) );
+// 	  // hist_time.push_back(new TH1D(Form("hist_time_%i", j), 
+// 	  // 			       Form("hist_time_%i", j), 
+// 	  // 			       500, -500.0, 4500.0) );
+
+// 	  nhits_hist->Fill(ID);
+// 	  firsthit_hist->Fill(TIME);
+
+// 	  // hist_chan.back()->Fill(ID);
+// 	  // hist_time.back()->Fill(TIME);
+// 	}
+//       }
+//     }
+//   }
+
+//   Sys::SysCout << "Histograming vfTDC hits." << Sys::endl;
+
+//   canvas->cd(1);
+//   nhits_hist->Draw(); 
+//   nhits_hist->SetLineColor(9);
+//   nhits_hist->SetLineWidth(2);
+//   nhits_hist->SetTitle("vfTDC Hits per Channel");
+
+//   // for(int i = 0; i < (int)(hist_chan.size()); i++){
+
+//   //   canvas->cd(1);
+//   //   nhits_hist->Draw(); 
+//   //   nhits_hist->SetLineColor(9);
+//   //   nhits_hist->SetLineWidth(2);
+//   //   nhits_hist->SetTitle(Form("vfTDC Hits - Channel %i", i));
+
+//   //   hist_chan[i]->Draw("same");
+//   //   hist_chan[i]->SetLineColor(2);
+//   //   hist_chan[i]->SetLineWidth(2);
+    
+//   canvas->cd(2);
+//   firsthit_hist->Draw(); 
+//   firsthit_hist->SetLineColor(9);
+//   firsthit_hist->SetLineWidth(2);
+//   firsthit_hist->SetTitle("vfTDC Hit Timing");
+//   firsthit_hist->GetXaxis()->SetRangeUser(min_time*0.9, max_time*1.1);
+    
+//     // canvas->cd(2);
+//     // firsthit_hist->Draw(); 
+//     // firsthit_hist->SetLineColor(9);
+//     // firsthit_hist->SetLineWidth(2);
+//     // firsthit_hist->SetTitle(Form("vfTDC Hit Timing - Channel %i", i));
+//     // firsthit_hist->GetXaxis()->SetRangeUser(min_time*0.9, max_time*1.1);
+
+//     // hist_time[i]->Draw("same");
+//     // hist_time[i]->SetLineColor(2);
+//     // hist_time[i]->SetLineWidth(2);
+    
+//     // canvas->SaveAs(Form("output/vfTDC_%i.png", i));
+//     // canvas->SaveAs(Form("output/vfTDC_%i.C", i));
+//     canvas->SaveAs("output/vfTDC.png");
+//     canvas->SaveAs("output/vfTDC.C");
+//   // }
   
-  Sys::SysCout << "Histograming vfTDC hits." << Sys::endl;
-
-  canvas->cd(1);
-  nhits_hist->Draw(); 
-  nhits_hist->SetLineColor(9);
-  nhits_hist->SetLineWidth(2);
-  nhits_hist->SetTitle("vfTDC Hits per Channel");
-
-  canvas->cd(2);
-  firsthit_hist->Draw(); 
-  firsthit_hist->SetLineColor(9);
-  firsthit_hist->SetLineWidth(2);
-  firsthit_hist->SetTitle("vfTDC Hit Timing");
-  firsthit_hist->GetXaxis()->SetRangeUser(min_time*0.9, max_time*1.1);
-
-  canvas->SaveAs("output/vfTDC.png");
-  canvas->SaveAs("output/vfTDC.C");
-
-  delete canvas;
+//   delete canvas;
   
-  Sys::SysMsg << "Analysis done." << Sys::endl;
+//   Sys::SysMsg << "Analysis done." << Sys::endl;
 
-  exit(0);
-}
+//   exit(0);
+// }
 
 void ComptonSimAnalysis::ScaleAsymmetry(TH1D *l, TH1D* r, TH1D *y_raw, int multiplier = 1)
 {

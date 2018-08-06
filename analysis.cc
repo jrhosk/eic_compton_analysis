@@ -22,6 +22,7 @@
 
 // Simulation Analysis class
 #include "ComptonSimAnalysis.hh"
+#include "vfTDCAnalysis.hh"
 
 // Generator
 #include "Generator.hh"
@@ -40,7 +41,11 @@ int main(int argc, char *argv[])
 
   if(simulation->fGraphicsShow) simulation->InitGraphicsEngine(argc, argv);
   if(simulation->fAsymmetryAnalysis) simulation->AsymmetryAnalysis();
-  if(simulation->fVetrocAnalysis) simulation->vfTDCAnalysis();
+  // if(simulation->fVetrocAnalysis) simulation->vfTDCAnalysis();
+  if(simulation->fVetrocAnalysis){ 
+    vfTDCAnalysis *vfTDCModule = new vfTDCAnalysis(simulation->fFileLocation);
+    vfTDCModule->vfTDCAnalyze();
+  }
 
   simulation->GenerateAsymmetry((char *)""); // The char * casting removes a deprecatred warning caused by difference between char * in C and C++
 
@@ -62,7 +67,7 @@ int main(int argc, char *argv[])
   std::fill(BinContent.begin(), BinContent.end(), 0);  
 
   if(!(simulation->fFileSet)){
-    Sys::SysError << "Must define rootfile first. Exiting." << Sys::endl;
+    Sys::SysError << __FUNCTION__ << " Must define rootfile first. Exiting." << Sys::endl;
     exit(1);
   }  
 
